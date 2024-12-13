@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Add to qBittorrent Options</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            width: 300px;
+            padding: 10px;
+        }
+        label {
+            display: block;
+            margin-top: 10px;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 5px;
+            margin-top: 5px;
+        }
+        button {
+            margin-top: 10px;
+            padding: 5px 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Add to qBittorrent Options</h1>
+    <form id="options-form">
+        <label for="server-url">Server URL:</label>
+        <input type="text" id="server-url" name="server-url" required>
+
+        <button type="submit">Save</button>
+    </form>
+    <script src="options.js"></script>
+</body>
+</html>
