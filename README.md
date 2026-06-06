@@ -19,7 +19,6 @@ This extension is not published on the Chrome Web Store, so you will need to loa
 ## Usage
 
 1. Right-click on a .torrent file link or magnet link and select "Add to qBittorrent" from the context menu.
-2. If a site copies a torrent link to your clipboard, you can also click the extension icon and select "Add Link from Clipboard" to add the torrent link from your clipboard.
 
 ## Browser Notifications
 

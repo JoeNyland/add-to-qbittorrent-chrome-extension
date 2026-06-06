@@ -42,14 +42,14 @@ function extractNameFromLink(link) {
   }
 }
 
-// Listen for messages from click interception in content.js and from the popup when adding from clipboard
-chrome.runtime.onMessage.addListener(({type, link, fromClipboard}) => {
+// Listen for messages from click interception in content.js
+chrome.runtime.onMessage.addListener(({type, link}) => {
   if (type === "ADD_TORRENT_LINK" && link) {
-    addTorrentToQbittorrent(link, fromClipboard);
+    addTorrentToQbittorrent(link);
   }
 });
 
-function addTorrentToQbittorrent(link, fromClipboard) {
+function addTorrentToQbittorrent(link) {
   chrome.storage.sync.get(['serverUrl'], (items) => {
     const { serverUrl } = items;
 
@@ -83,9 +83,7 @@ function addTorrentToQbittorrent(link, fromClipboard) {
         iconUrl: 'icons/icon48.png',
         title: 'Link Added',
         silent: true,
-        message: fromClipboard ?
-          `The torrent link from clipboard "${extractNameFromLink(link)}" has been added to qBittorrent.` :
-          `The torrent link "${extractNameFromLink(link)}" has been added to qBittorrent.`,
+        message: `The torrent link "${extractNameFromLink(link)}" has been added to qBittorrent.`,
       }, (id) => {
         // Auto-clear after 5 seconds
         setTimeout(() => {
