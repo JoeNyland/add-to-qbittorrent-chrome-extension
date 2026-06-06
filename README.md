@@ -13,7 +13,7 @@ This extension is not published on the Chrome Web Store, so you will need to loa
 
 ## Configuring qBittorrent Server Details
 
-1. Open the extension options by clicking _Details_ > _Extension options+ for the _Add to qBittorrent_ extension in the [Chrome extensions page](chrome://extensions/).
+1. Open the extension options by clicking _Details_ > _Extension options_ for the _Add to qBittorrent_ extension in the [Chrome extensions page](chrome://extensions/).
 2. Enter your qBittorrent server URL and click "Save". For example: `http://qbittorrent.example.com:8080`.
 
 ## Usage
