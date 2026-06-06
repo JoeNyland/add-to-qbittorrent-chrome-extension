@@ -26,11 +26,6 @@
       "matches": ["http://*/*", "https://*/*"],
       "js": ["content.js"],
       "run_at": "document_start"
-    },
-    {
-      "matches": ["*://downloadtorrentfile.com/*"],
-      "js": ["downloadtorrentfile-content.js"],
-      "run_at": "document_end"
     }
   ],
   "options_page": "options.html"
