@@ -11,15 +11,6 @@ function createContextMenus() {
       targetUrlPatterns: ["*://*/*.torrent", "magnet:*"],
     });
 
-    // Add a 'no category' child so users can add without a category
-    chrome.contextMenus.create({
-      id: "category:__none",
-      parentId: "addTorrent",
-      title: "Add (no category)",
-      contexts: ["link", "selection"],
-      targetUrlPatterns: ["*://*/*.torrent", "magnet:*"],
-    });
-
     // Load categories and create submenu items
     chrome.storage.sync.get(['categories'], (items) => {
       const cats = Array.isArray(items.categories) ? items.categories : [];
