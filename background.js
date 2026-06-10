@@ -32,7 +32,7 @@ function createContextMenus() {
     chrome.contextMenus.create({
       id: "add:__none",
       parentId: "addNormal",
-      title: "Add",
+      title: "Add (no category)",
       contexts: ["link", "selection"],
       targetUrlPatterns: ["*://*/*.torrent", "magnet:*"],
     });
@@ -40,7 +40,7 @@ function createContextMenus() {
     chrome.contextMenus.create({
       id: "add_paused:__none",
       parentId: "addPaused",
-      title: "Add",
+      title: "Add (no category)",
       contexts: ["link", "selection"],
       targetUrlPatterns: ["*://*/*.torrent", "magnet:*"],
     });
