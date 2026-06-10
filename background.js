@@ -11,22 +11,58 @@ function createContextMenus() {
       targetUrlPatterns: ["*://*/*.torrent", "magnet:*"],
     });
 
-    // Add a 'no category' child so users can add without a category
+    // Grouped parents: normal add and paused add
     chrome.contextMenus.create({
-      id: "category:__none",
+      id: "addNormal",
       parentId: "addTorrent",
+      title: "Add",
+      contexts: ["link", "selection"],
+      targetUrlPatterns: ["*://*/*.torrent", "magnet:*"],
+    });
+
+    chrome.contextMenus.create({
+      id: "addPaused",
+      parentId: "addTorrent",
+      title: "Add ⏸",
+      contexts: ["link", "selection"],
+      targetUrlPatterns: ["*://*/*.torrent", "magnet:*"],
+    });
+
+    // Add 'no category' child for both groups
+    chrome.contextMenus.create({
+      id: "add:__none",
+      parentId: "addNormal",
       title: "Add (no category)",
       contexts: ["link", "selection"],
       targetUrlPatterns: ["*://*/*.torrent", "magnet:*"],
     });
 
-    // Load categories and create submenu items
+    chrome.contextMenus.create({
+      id: "add_paused:__none",
+      parentId: "addPaused",
+      title: "Add (no category)",
+      contexts: ["link", "selection"],
+      targetUrlPatterns: ["*://*/*.torrent", "magnet:*"],
+    });
+
+    // Load categories and create submenu items under both groups
     chrome.storage.sync.get(['categories'], (items) => {
       const cats = Array.isArray(items.categories) ? items.categories : [];
       cats.forEach((c) => {
+        const encoded = encodeURIComponent(c);
+        // Normal add for category
         chrome.contextMenus.create({
-          id: buildCategoryMenuId(c),
-          parentId: "addTorrent",
+          id: `add:category:${encoded}`,
+          parentId: "addNormal",
+          title: c,
+          contexts: ["link", "selection"],
+          targetUrlPatterns: ["*://*/*.torrent", "magnet:*"],
+        });
+
+        // Paused variant for category
+        chrome.contextMenus.create({
+          id: `add_paused:category:${encoded}`,
+          parentId: "addPaused",
           title: c,
           contexts: ["link", "selection"],
           targetUrlPatterns: ["*://*/*.torrent", "magnet:*"],
@@ -64,19 +100,31 @@ chrome.contextMenus.onClicked.addListener((info) => {
     return;
   }
 
-  if (info.menuItemId && info.menuItemId.startsWith('category:')) {
-    if (info.menuItemId === 'category:__none') {
-      addTorrentToQbittorrent(trimmedLink);
-      return;
-    }
-    const encoded = info.menuItemId.slice('category:'.length);
+  // Determine which group was clicked (normal or paused) and the category
+  let menuId = info.menuItemId || '';
+  let paused = false;
+  // menu ids are like: 'add:__none', 'add:category:<enc>', 'add_paused:__none', 'add_paused:category:<enc>'
+  if (menuId.startsWith('add_paused:')) {
+    paused = true;
+    menuId = menuId.slice('add_paused:'.length);
+  } else if (menuId.startsWith('add:')) {
+    menuId = menuId.slice('add:'.length);
+  }
+
+  if (menuId === '__none') {
+    addTorrentToQbittorrent(trimmedLink, undefined, paused);
+    return;
+  }
+
+  if (menuId.startsWith('category:')) {
+    const encoded = menuId.slice('category:'.length);
     const category = decodeURIComponent(encoded);
-    addTorrentToQbittorrent(trimmedLink, category);
+    addTorrentToQbittorrent(trimmedLink, category, paused);
     return;
   }
   // Fallback: if top-level item clicked, add without category
   if (info.menuItemId === 'addTorrent') {
-    addTorrentToQbittorrent(trimmedLink);
+    addTorrentToQbittorrent(trimmedLink, undefined, paused);
   }
 });
 
@@ -104,7 +152,7 @@ chrome.runtime.onMessage.addListener(({type, link}) => {
   }
 });
 
-function addTorrentToQbittorrent(link, category) {
+function addTorrentToQbittorrent(link, category, paused = false) {
   chrome.storage.sync.get(['serverUrl'], (items) => {
     const { serverUrl } = items;
 
@@ -128,6 +176,9 @@ function addTorrentToQbittorrent(link, category) {
     let body = `urls=${encodeURIComponent(link)}`;
     if (category) {
       body += `&category=${encodeURIComponent(category)}`;
+    }
+    if (paused) {
+      body += `&stopped=true`;
     }
 
     return fetch(`${serverUrl}/api/v2/torrents/add`, {
