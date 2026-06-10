@@ -29,6 +29,13 @@
         <label for="server-url">Server URL:</label>
         <input type="text" id="server-url" name="server-url" required>
 
+        <label for="default-category-input">Categories:</label>
+        <div style="display:flex; gap:6px;">
+            <input type="text" id="default-category-input" placeholder="Add category name">
+            <button type="button" id="add-category">Add</button>
+        </div>
+        <ul id="categories-list" style="padding-left:16px; margin-top:8px;"></ul>
+
         <button type="submit">Save</button>
     </form>
     <script src="options.js"></script>

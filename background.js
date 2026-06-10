@@ -1,27 +1,82 @@
-chrome.runtime.onInstalled.addListener(() => {
-  chrome.contextMenus.create({
-    id: "addTorrent",
-    title: "Add to qBittorrent",
-    contexts: ["link", "selection"],
-    targetUrlPatterns: ["*://*/*.torrent", "magnet:*"],
+function buildCategoryMenuId(cat) {
+  return `category:${encodeURIComponent(cat)}`;
+}
+
+function createContextMenus() {
+  chrome.contextMenus.removeAll(() => {
+    chrome.contextMenus.create({
+      id: "addTorrent",
+      title: "Add to qBittorrent",
+      contexts: ["link", "selection"],
+      targetUrlPatterns: ["*://*/*.torrent", "magnet:*"],
+    });
+
+    // Add a 'no category' child so users can add without a category
+    chrome.contextMenus.create({
+      id: "category:__none",
+      parentId: "addTorrent",
+      title: "Add (no category)",
+      contexts: ["link", "selection"],
+      targetUrlPatterns: ["*://*/*.torrent", "magnet:*"],
+    });
+
+    // Load categories and create submenu items
+    chrome.storage.sync.get(['categories'], (items) => {
+      const cats = Array.isArray(items.categories) ? items.categories : [];
+      cats.forEach((c) => {
+        chrome.contextMenus.create({
+          id: buildCategoryMenuId(c),
+          parentId: "addTorrent",
+          title: c,
+          contexts: ["link", "selection"],
+          targetUrlPatterns: ["*://*/*.torrent", "magnet:*"],
+        });
+      });
+    });
   });
+}
+
+chrome.runtime.onInstalled.addListener(() => {
+  createContextMenus();
+});
+
+chrome.runtime.onStartup && chrome.runtime.onStartup.addListener(() => {
+  createContextMenus();
+});
+
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === 'sync' && changes.categories) {
+    createContextMenus();
+  }
 });
 
 chrome.contextMenus.onClicked.addListener((info) => {
-  if (info.menuItemId === "addTorrent") {
-    const link = info.linkUrl || info.selectionText;
-    const trimmedLink = link.trim();
-    if (trimmedLink && (trimmedLink.endsWith('.torrent') || trimmedLink.startsWith('magnet:'))) {
+  const link = info.linkUrl || info.selectionText;
+  const trimmedLink = (link || '').trim();
+  if (!trimmedLink || !(trimmedLink.endsWith('.torrent') || trimmedLink.startsWith('magnet:'))) {
+    chrome.notifications.create("", {
+      type: 'basic',
+      iconUrl: 'icons/icon48.png',
+      title: 'Invalid Link',
+      silent: true,
+      message: 'The selected link is not a valid .torrent link or magnet URI.',
+    });
+    return;
+  }
+
+  if (info.menuItemId && info.menuItemId.startsWith('category:')) {
+    if (info.menuItemId === 'category:__none') {
       addTorrentToQbittorrent(trimmedLink);
-    } else {
-      chrome.notifications.create("", {
-        type: 'basic',
-        iconUrl: 'icons/icon48.png',
-        title: 'Invalid Link',
-        silent: true,
-        message: 'The selected link is not a valid .torrent link or magnet URI.',
-      });
+      return;
     }
+    const encoded = info.menuItemId.slice('category:'.length);
+    const category = decodeURIComponent(encoded);
+    addTorrentToQbittorrent(trimmedLink, category);
+    return;
+  }
+  // Fallback: if top-level item clicked, add without category
+  if (info.menuItemId === 'addTorrent') {
+    addTorrentToQbittorrent(trimmedLink);
   }
 });
 
@@ -49,7 +104,7 @@ chrome.runtime.onMessage.addListener(({type, link}) => {
   }
 });
 
-function addTorrentToQbittorrent(link) {
+function addTorrentToQbittorrent(link, category) {
   chrome.storage.sync.get(['serverUrl'], (items) => {
     const { serverUrl } = items;
 
@@ -70,12 +125,17 @@ function addTorrentToQbittorrent(link) {
      * urls=https://example.com/foo.torrent
      * category=foo
      */
+    let body = `urls=${encodeURIComponent(link)}`;
+    if (category) {
+      body += `&category=${encodeURIComponent(category)}`;
+    }
+
     return fetch(`${serverUrl}/api/v2/torrents/add`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
-      body: `urls=${encodeURIComponent(link)}`,
+      body,
     })
     .then(() => {
       chrome.notifications.create("", {
